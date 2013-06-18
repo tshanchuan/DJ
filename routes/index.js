@@ -20,7 +20,9 @@ module.exports = function(app){
     app.post('/updateTime',site.updateTime);        //更新【投票/话题】实际结束时间
 
     app.post('/voteFeedback',site.requestvoteFeedback);         //投票反馈
-    app.post('/voteFeedbackData',site.voteFeedbackData);         //投票反馈
+    app.post('/voteFeedbackData',site.voteFeedbackData);        //保存投票反馈结果到库
+	app.post('/topicFeedback',site.requesttopicFeedback);         //话题反馈
+    app.post('/topicFeedbackData',site.topicFeedbackData);         //保存话题反馈结果到库
 
     app.post('/topicToTsp',site.requesttopicToTsp);       //TSP请求有效的话题内容
     app.post('/replyTopic',site.replyTopic);              //语镜用户通过TSP回复话题

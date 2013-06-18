@@ -22,7 +22,6 @@ var vote        =   config.vote;//投票入口
 var voteFeedback    =   config.voteFeedback;//投票反馈入口
 var trafficStatus    =   config.trafficStatus;//路况快分享
 var dj  =   config.queryBase; //dj库入口
-var topicToTsp  =   config.topicToTsp;  //发给tsp话题
 
 /*处理空值与注入*/
 function handleParam(params){
@@ -73,7 +72,7 @@ function getRandomString(table,column) {
     var conf        =   extend(dj,{'database':'dj'});
     var query       =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT '+column+' FROM `dj`.`'+table+'` where '+column+'="'+id+'" limit 1';
+    var sql = 'SELECT '+column+' FROM dj.'+table+' where '+column+'="'+id+'" limit 1';
     query.exec(sql,function (rows,fields) {
         if(rows != ""){
             id = getRandomString(table,column);
@@ -202,7 +201,7 @@ exports.requestsaveVote = function (req,res,next){
     var conf        =   extend(dj,{'database':'dj'});
     var query       =   new db.orm(conf);
     query.init();
-    var sql = 'INSERT INTO `dj`.`voteInfo` (text,time,bizid,startTime,endTime,yesInfo,noInfo,ignoreInfo,voteid,cityAbbreviation) VALUES ("'+data.content+'","'+data.time+'","'+data.bizid+'","'+data.startTime+'","'+data.endTime+'","'+data.yesInfo+'","'+data.noInfo+'","'+data.ignoreInfo+'","'+data.voteId+'","'+data.cityid+'")';
+    var sql = 'INSERT INTO dj.voteInfo (text,time,bizid,startTime,endTime,yesInfo,noInfo,ignoreInfo,voteid,cityAbbreviation) VALUES ("'+data.content+'","'+data.time+'","'+data.bizid+'","'+data.startTime+'","'+data.endTime+'","'+data.yesInfo+'","'+data.noInfo+'","'+data.ignoreInfo+'","'+data.voteId+'","'+data.cityid+'")';
     query.exec(sql,function (rows,fields) {
         res.json(rows);
     });
@@ -217,7 +216,7 @@ exports.requestHistory = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`'+table+'` ORDER BY time DESC LIMIT '+page+',7';
+    var sql = 'SELECT * FROM dj.'+table+' ORDER BY time DESC LIMIT '+page+',7';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -232,7 +231,7 @@ exports.updateTime = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'UPDATE `dj`.`'+table+'` SET actualEndTime = "'+actualEndTime+'" WHERE actualEndTime=""' ;
+    var sql = 'UPDATE dj.'+table+' SET actualEndTime = "'+actualEndTime+'" WHERE actualEndTime is null' ;
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -245,7 +244,7 @@ exports.showVoteHistory = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`voteInfo` WHERE id='+id;
+    var sql = 'SELECT * FROM dj.voteInfo WHERE id='+id;
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -283,8 +282,7 @@ exports.voteFeedbackData = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'UPDATE `dj`.`voteInfo` SET yesCount = '+yesCount+',noCount = '+noCount+',ignoreCount = '+ignoreCount+',totalCount = '+totalCount+' WHERE actualEndTime = ""';
-    console.log(sql);
+    var sql = 'UPDATE dj.voteInfo SET yesCount = '+yesCount+',noCount = '+noCount+',ignoreCount = '+ignoreCount+',totalCount = '+totalCount+' WHERE actualEndTime is null';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -300,13 +298,13 @@ exports.requestsaveTopic = function (req,res,next){
          endTime     :   reqBody.endTime,    //得到话题结束时间
          bizid       :   reqBody.bizid,    //得到bizid
          time        :   getTimeNow(),       //插入该条记录的时间
-         cityid      :   topicToTsp.cityCode,
+         cityid      :   api.cityCode,
          topicid     :   getRandomString('topicInfo','topicid')    //生成十五位的随机码
     };
     var conf        =   extend(dj,{'database':'dj'})
     var query       =   new db.orm(conf);
     query.init();
-    var sql = 'INSERT INTO `dj`.`topicInfo`(text,time,bizid,startTime,endTime,subject,topicid,cityAbbreviation) VALUES ("'+data.text+'","'+data.time+'","'+data.bizid+'","'+data.startTime+'","'+data.endTime+'","'+data.subject+'","'+data.topicid+'","'+data.cityid+'")';
+    var sql = 'INSERT INTO dj.topicInfo (text,time,bizid,startTime,endTime,subject,topicid,cityAbbreviation) VALUES ("'+data.text+'","'+data.time+'","'+data.bizid+'","'+data.startTime+'","'+data.endTime+'","'+data.subject+'","'+data.topicid+'","'+data.cityid+'")';
     query.exec(sql,function (rows,fields) {
         res.json(rows);
     });
@@ -332,7 +330,7 @@ exports.requesttopicToTsp = function (req,res,next){
             var conf    =   extend(dj,{'database':'dj'});
             var query   =   new db.orm(conf);
             query.init();
-            var sql = 'SELECT text,subject,topicid FROM `dj`.`topicInfo` where actualEndTime = "" ORDER BY time DESC LIMIT 1';
+            var sql = 'SELECT text,subject,topicid FROM dj.topicInfo where actualEndTime is null ORDER BY time DESC LIMIT 1';
             query.exec(sql, function (rows, fields) {
                 if(rows.length != 0){
                     var djrows = {"ERRORCODE":"0","RESULT":{"city":[{"name":"重庆市","radioStation":[{"stationName":"重庆955交通广播","stationTopic":rows}]}]}};
@@ -351,6 +349,19 @@ exports.requesttopicToTsp = function (req,res,next){
         }
     });
 }
+/*话题反馈结果*/
+exports.requesttopicFeedback = function (req,res,next){
+	var reqBody =   handleParam(req.body); //得到POST的数据
+    var topicID    =   reqBody.topicID;
+	var conf    =   extend(dj,{'database':'dj'});
+    var query   =   new db.orm(conf);
+    query.init();
+    var sql = 'SELECT count(*) FROM dj.topicDiscussInfo WHERE topicID="'+topicID+'"';
+    query.exec(sql, function (rows, fields) {
+        res.json(rows);
+    })
+    query.end();	
+}
 /*显示历史话题详情*/
 exports.showTopicHistory = function (req,res,next){
     var reqBody =   handleParam(req.body); //得到POST的数据
@@ -358,7 +369,7 @@ exports.showTopicHistory = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`topicInfo` WHERE id='+id;
+    var sql = 'SELECT * FROM dj.topicInfo WHERE id='+id;
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -369,7 +380,7 @@ exports.requesttrafficweibo = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`sharedWeibo` WHERE broadcast = 0  ORDER BY time desc limit 30';
+    var sql = 'SELECT * FROM dj.sharedWeibo WHERE broadcast = 0  ORDER BY time desc limit 30';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -380,8 +391,7 @@ exports.selectedTraffic = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`sharedWeibo` WHERE broadcast = 1';
-	console.log(sql);
+    var sql = 'SELECT * FROM dj.sharedWeibo WHERE broadcast = 1';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -394,7 +404,7 @@ exports.refreshTrafficweibo = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'})
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`sharedWeibo` WHERE broadcast = 0 AND id >'+id+' ORDER BY time ';
+    var sql = 'SELECT * FROM dj.sharedWeibo WHERE broadcast = 0 AND id >'+id+' ORDER BY time ';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -409,7 +419,7 @@ exports.requestanycast = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'UPDATE `dj`.`'+table+'` SET broadcast = 1 WHERE id= '+id;
+    var sql = 'UPDATE dj.'+table+' SET broadcast = 1 WHERE id= '+id;
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -424,7 +434,7 @@ exports.showAnycast = function (req,res,next){
     var conf        =   extend(dj,{'database':'dj'})
     var query       =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`'+table+'` WHERE broadcast = 1  AND id= '+id+' ORDER BY time limit 1';
+    var sql = 'SELECT * FROM dj.'+table+' WHERE broadcast = 1  AND id= '+id+' ORDER BY time limit 1';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -439,8 +449,7 @@ exports.requestClose = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'UPDATE `dj`.`'+table+'` SET broadcast = 2 WHERE id= '+id;
-    console.log(sql);
+    var sql = 'UPDATE dj.'+table+' SET broadcast = 2 WHERE id= '+id;
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -454,8 +463,7 @@ exports.requestCloseAll = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'UPDATE `dj`.`'+table+'` SET broadcast = 2 WHERE broadcast = 1';
-    console.log(sql);
+    var sql = 'UPDATE dj.'+table+' SET broadcast = 2 WHERE broadcast = 1';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
@@ -492,7 +500,7 @@ exports.saveTrafficStatus = function (req,res,next){
             var conf    =   extend(dj,{'database':'dj'});
             var query   =   new db.orm(conf);
             query.init();
-            var sql = 'INSERT INTO `dj`.`sharedWeibo` (text,time,bizid,agent,serviceType,sign,mirrtalkNumber,name,nickname,broadcast,longitude,latitude,supportOnline) VALUES ("'+data.text+'","'+time+'","'+data.bizid+'","'+data.agent+'","'+data.serviceType+'","'+signs+'","'+data.mirrtalkNumber+'","'+data.name+'","'+data.nickname+'","'+data.broadcast+'","'+data.longitude+'","'+data.latitude+'","'+data.supportOnline+'")';
+            var sql = 'INSERT INTO dj.sharedWeibo (text,time,bizid,agent,serviceType,sign,mirrtalkNumber,name,nickname,broadcast,longitude,latitude,supportOnline) VALUES ("'+data.text+'","'+time+'","'+data.bizid+'","'+data.agent+'","'+data.serviceType+'","'+signs+'","'+data.mirrtalkNumber+'","'+data.name+'","'+data.nickname+'","'+data.broadcast+'","'+data.longitude+'","'+data.latitude+'","'+data.supportOnline+'")';
             query.exec(sql, function (rows, fields) {
                 if(rows.fieldCount ==0){
                     var djrows = {"ERRORCODE":"0","RESULT":null}
@@ -537,17 +545,25 @@ exports.replyTopic = function (req,res,next){
             var conf    =   extend(dj,{'database':'dj'});
             var query   =   new db.orm(conf);
             query.init();
-            var sql = 'INSERT INTO `dj`.`topicDiscussInfo` (text,topicid,mirrtalkNumber,time,broadcast,supportOnline) VALUES ("'+data.text+'","'+data.topicid+'","'+data.mirrtalkNumber+'","'+time+'","'+0+'","'+data.supportOnline+'")';
-            query.exec(sql, function (rows, fields) {
-                client.quit();
-                if(rows.fieldCount ==0){
-                    var djrows = {"ERRORCODE":"0","RESULT":null}
-                }else{
-                    var djrows = {"ERRORCODE":"ME01003","RESULT":null};
-                }
-                res.json(djrows);
-            })
-            query.end();
+			var sql = 'SELECT actualEndTime FROM dj.topicInfo WHERE actualEndTime is  null AND  topicID = "'+reqBody.topicid+'"';
+			query.exec(sql, function (rows, fields) {
+				if(rows != "" ){
+					var sql = 'INSERT INTO dj.topicDiscussInfo (text,topicid,mirrtalkNumber,time,broadcast,supportOnline) VALUES ("'+data.text+'","'+data.topicid+'","'+data.mirrtalkNumber+'","'+time+'","'+0+'","'+data.supportOnline+'")';
+					query.exec(sql, function (rows, fields) {
+						client.quit();
+						if(rows.fieldCount ==0){
+							var djrows = {"ERRORCODE":"0","RESULT":null}
+						}else{
+							var djrows = {"ERRORCODE":"ME01003","RESULT":null};
+						}
+						res.json(djrows);
+					});
+					query.end();
+				}else{
+					var djrows = {"ERRORCODE":"ME01003","RESULT":null};
+					res.json(djrows);
+				}
+			});
         }else{
             var djrows = {"ERRORCODE":"ME11001","RESULT":null};
             client.quit();
@@ -562,42 +578,60 @@ exports.showReplyTopic = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`topicDiscussInfo` WHERE broadcast = 0 AND topicID = "'+topicID+'" ORDER BY time DESC LIMIT 30';
+    var sql = 'SELECT * FROM dj.topicDiscussInfo WHERE broadcast = 0 AND topicID = "'+topicID+'" ORDER BY time DESC LIMIT 30';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
     query.end();
 }
 /*互动话题 得到实时有效的互动话题*/
-exports.requestshowTopic = function (req,res,text){
+exports.requestshowTopic = function (req,res,next){
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`topicInfo` WHERE actualEndTime = "" ORDER BY time desc limit 1';
+    var sql = 'SELECT * FROM dj.topicInfo WHERE actualEndTime is null ORDER BY time desc limit 1';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
     query.end();
 }
 /*互动话题 得到有效的互动话题 每十秒*/
-exports.refreshReplyTopic = function (req,res,text){
+exports.refreshReplyTopic = function (req,res,next){
+    var reqBody     =   handleParam(req.body);
+    var topicID       =   reqBody.topicID;
+    var id       =   reqBody.id;
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`topicDiscussInfo`  WHERE broadcast= 0  AND topicID ="'+topicID+'" ORDER BY time';
+    var sql = 'SELECT * FROM dj.topicDiscussInfo  WHERE broadcast= 0  AND topicID ="'+topicID+'" AND id>'+id+' ORDER BY time';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })
     query.end();
 }
 /*互动话题 载入实时有效的已选播互动话题*/
-exports.selectedReplyTopic = function (req,res,text){
+exports.selectedReplyTopic = function (req,res,next){
     var reqBody     =   handleParam(req.body);
     var topicID       =   reqBody.topicID;
     var conf    =   extend(dj,{'database':'dj'});
     var query   =   new db.orm(conf);
     query.init();
-    var sql = 'SELECT * FROM `dj`.`topicDiscussInfo` WHERE broadcast= 1  AND topicID ="'+topicID+'" ORDER BY time';
+    var sql = 'SELECT * FROM dj.topicDiscussInfo WHERE broadcast= 1  AND topicID ="'+topicID+'" ORDER BY time';
+    query.exec(sql, function (rows, fields) {
+        res.json(rows);
+    })
+    query.end();
+}
+/*互动话题 保存用户反馈数据*/
+exports.topicFeedbackData = function (req,res,next){
+	var reqBody	=	handleParam(req.body);
+	var topicID       =   reqBody.topicID;
+	var totalCount       =   reqBody.totalCount;
+	var joinInCount       =   reqBody.joinInCount;
+	var conf    =   extend(dj,{'database':'dj'});
+    var query   =   new db.orm(conf);
+    query.init();
+    var sql = 'UPDATE  dj.topicInfo SET totalCount = '+totalCount+' ,joinInCount = '+joinInCount+' WHERE topicID = "'+topicID+'"';
     query.exec(sql, function (rows, fields) {
         res.json(rows);
     })

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Created with JetBrains WebStorm.
  * User: Administrator
  * Date: 13-5-16
@@ -15,9 +15,9 @@ exports.config = {
     version:'0.9', // site settings
     host:'localhost.cnodejs.org',
     site_logo:'', // default is `name`
-    site_static_host:'', // 静态文件存储域�?
+    site_static_host:'', // 静态文件存储域
     site_enable_search_preview:false, // 开启google search preview
-    site_google_search_domain:'cnodejs.org', // google search preview中要搜索的域�?
+    site_google_search_domain:'cnodejs.org', // google search preview中要搜索的域
     db:'mongodb://127.0.0.1/node_club_dev',
     session_secret:'DJ',
     auth_cookie_name:'DJ',

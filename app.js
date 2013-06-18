@@ -10,7 +10,7 @@ var express = require('express'),   //导入Express模块
     path = require('path'),
     juicer = require('juicer'),
     fs = require('fs');
-    io = require('socket.io');
+    //io = require('socket.io');
 
 
 var app = express();

@@ -9,7 +9,7 @@
 var $id = function (id) {
     return document.getElementById(id);
 }
-var topicClock,topicAccount,topicArray,voteClock,voteAccount,voteArray =[],bizids,topicID,setReplyTopic,setVoteFeedback,setTopicFeedback;
+var topicClock,topicAccount,topicArray,voteClock,voteAccount,voteArray =[],newTopicArray=[],bizids,setReplyTopic,topicID,setVoteFeedback;
 
 /*页面关闭*/
 /*window.onbeforeunload = onbeforeunload_handler;
@@ -32,7 +32,7 @@ function emptyHtml(){
 /*验证非法字符*/
 function checking(str){
    var res = str.replace(/<([^ >])+[^>]*>(?:[\S\s]*?<\/\1>)?/gi,"");
-   return res;
+   return res.split(" ");
 }
 /*提示内容*/
 function prompt(data){
@@ -227,8 +227,8 @@ function initiateVote(){
                 '</li>' +
                 '<li class="form-inline">' +
                     '<label for="voteLottery">设置抽奖：</label>' +
-                    '<button class="btn btn-link">+新增抽奖活动</button>' +
-                    '<button class="btn pull-right" onclick="votePreview();">预览</button>' +
+                    '<button class="btn btn-link disabled" disabled>+新增抽奖活动</button>' +
+                    '<button class="btn pull-right" onclick="votePreview();" id="votePreview">预览</button>' +
                 '</li>' +
             '</ul>' +
             '';
@@ -255,6 +255,7 @@ function votePreview(){
             noInfo   :  no,
             ignoreInfo: ignore,
             timers  :   timers,
+			actualEndTime:null,
             totalCount    :   0,
             yesCount    :   0,
             noCount     :   0,
@@ -269,6 +270,7 @@ function votePreview(){
 /*提交投票*/
 function votePost(voteArray){
     var votecontent = $('#vote').text();
+	$('.ToComplete').html('<h3 class="text-info">正在发送投票请等待......</h3>');
     $.ajax({
         url:'/DistrictWeibo',
         type:'POST',
@@ -278,6 +280,8 @@ function votePost(voteArray){
         $('.ToComplete').html('<h3 class='+data.class+'>'+data.ME+'</h3><button class="btn btn-primary pull-right" id="ViewVote" onclick="ViewVote(voteArray);">查看活动</button>');
         $id('votePostBtn').disabled = true;
         $('#votePostBtn').addClass('disabled');
+		$id('votePreview').disabled = true;
+        $('#votePreview').addClass('disabled');
         bizids = data.bizid;
         if(bizids !=""){
             var st = getTime(0);
@@ -289,38 +293,57 @@ function votePost(voteArray){
                 dataType:'json'
             }).done(function (data){
                   data.fieldCount == 0?(
-                    VoteCountDown(voteArray.timers),
                     voteHistory(),//调用数据库得到刚发送的投票
-                    voteFeedback(bizids), //得到投票的用户反馈
-                    $('#VoteHistory li:first-child').css("background-color","rgba(11, 223, 28, 0.41)")
+                    voteFeedback(bizids) ,//得到投票的用户反馈
+					VoteCountDown(voteArray.timers)
                   ):($('.ToComplete').append('<h6>投票内容保存失败</h6>'));
             });
         }else{
             $id('ViewVote').disabled = true;
             $('#ViewVote').addClass('disabled');
             $id('votePostBtn').disabled = false;
+            $('#votePostBtn').removeClass('disabled'); 
+			$id('votePreview').disabled = false;
             $('#votePostBtn').removeClass('disabled');
         }
     });
 }
 /*查看投票结果*/
 function ViewVote(voteArray){
-    var voteSituationHtml='';
-    if(voteArray.timers !="" || voteArray.actualEndTime==""){
+    var voteSituationHtml='',voteFeedbackHtml='';
+   if(voteArray.timers !="" && voteArray.actualEndTime==null){
         voteSituationHtml  =
             '<div class="voteSituation">' +
                 '<h4>本次投票成功推送至<strong class="text-error" id="total">'+voteArray.totalCount+'</strong>台语镜</h4><hr />' +
                 '<h3>距离结束还有<em id="voteClock" class="label label-info">0时0分0秒</em></h3>' +
                 '<button class="btn btn-danger" id="stopVote" onclick="earlyTerminationVote();">提前结束</button>' +
-                '<button class="btn btn-success">系统抽奖</button>'+
+                '<button class="btn btn-success disabled" disabled>系统抽奖</button>'+
             '</div>';
-    }else{
+		voteFeedbackHtml   =
+        '<div class="voteFeedback">' +
+            '<h3>参与投票人数 <em id="allNum">'+voteArray.totalCount+'</em> 人</h3>' +
+            '<h4>'+voteArray.yesInfo+'（YES键）<em id="yesNum">'+voteArray.yesCount+'</em> 票</h4>' +
+            '<h4>'+voteArray.noInfo+'（NO键）<em id="noNum">'+voteArray.noCount+'</em> 票</h4>' +
+            '<h4>'+voteArray.ignoreInfo+'（无回复）<em id="ignoreNum">'+voteArray.ignoreCount+'</em> 票</h4>' +
+            '<h3>获奖人数<em id="winNum">0</em> 人</h3>'+
+            '<button class="btn btn-primary pull-right disabled" disabled >导出详情</button>' +
+        '</div>';	
+    }else if(voteArray.actualEndTime != ""){
         voteSituationHtml  =
             '<div class="voteSituation">' +
                 '<h4>本次投票成功推送至<strong class="text-error">'+voteArray.totalCount+'</strong>台语镜</h4><hr />' +
                 '<h3>已结束</h3>' +
-                '<button class="btn btn-success">系统抽奖</button>'+
+                '<button class="btn btn-success disabled" disabled>系统抽奖</button>'+
             '</div>';
+		voteFeedbackHtml   =
+        '<div class="voteFeedback">' +
+            '<h3>参与投票人数 <em id="allNum">'+voteArray.totalCount+'</em> 人</h3>' +
+            '<h4>'+voteArray.yesInfo+'（YES键）<em>'+voteArray.yesCount+'</em> 票</h4>' +
+            '<h4>'+voteArray.noInfo+'（NO键）<em>'+voteArray.noCount+'</em> 票</h4>' +
+            '<h4>'+voteArray.ignoreInfo+'（无回复）<em>'+voteArray.ignoreCount+'</em> 票</h4>' +
+            '<h3>获奖人数<em id="winNum">0</em> 人</h3>'+
+            '<button class="btn btn-primary pull-right disabled" disabled >导出详情</button>' +
+        '</div>';	
     }
     var votePreviewHtml    =
         '<div class="votePreview">' +
@@ -328,15 +351,6 @@ function ViewVote(voteArray){
             '<h4>'+voteArray.text+'。<br />'+voteArray.yesInfo+'请按圆圈键，'+voteArray.noInfo+'请按叉键，'+voteArray.ignoreInfo+'不需要回复。</h4>' +
             '<button class="btn pull-right" onclick="originalVoteForm(voteArray);">原始表单</button>' +
         '</div>';
-    var voteFeedbackHtml   =
-        '<div class="voteFeedback">' +
-            '<h3>参与投票人数 <em id="allNum">'+voteArray.totalCount+'</em> 人</h3>' +
-            '<h4>'+voteArray.yesInfo+'（YES键）<em id="yesNum">'+voteArray.yesCount+'</em> 票</h4>' +
-            '<h4>'+voteArray.noInfo+'（NO键）<em id="noNum">'+voteArray.noCount+'</em> 票</h4>' +
-            '<h4>'+voteArray.ignoreInfo+'（无回复）<em id="ignoreNum">'+voteArray.ignoreCount+'</em> 票</h4>' +
-            '<h3>获奖人数<em id="winNum">0</em> 人</h3>'+
-            '<button class="btn btn-primary pull-right">导出详情</button>' +
-        '</div>'
     $('.FillInForm').html(votePreviewHtml);
     $('.EffectPreview').html(voteSituationHtml);
     $('.ToComplete').html(voteFeedbackHtml);
@@ -414,13 +428,12 @@ function earlyTerminationVote(){
             voteFeedbackData(), //保存反馈数据
             $id('stopVote').disabled= true,
             $('#stopVote').addClass('disabled'),
-            voteClock = 0,
+			voteClock = 0,
             setCookie('voteClock',voteClock),
             clearTimeout(voteAccount),
             clearTimeout(setVoteFeedback),
             $('.alert span').text("投票结束啦，赶快去看看吧！"),
-            $('.alert').removeClass("alert-error").addClass("alert-success").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000),
-            $('#VoteHistory li:first-child').css("background-color","white")
+            $('.alert').removeClass("alert-error").addClass("alert-success").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
         ):(
             $('.alert span').text("投票结束失败！"),
             $('.alert').removeClass("alert-success").addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
@@ -531,7 +544,7 @@ function showVoteHistory(data){
             actualEndTime   :   data[0]["actualEndTime"],
             startTime   :   data[0]["startTime"],
             endTime   :   data[0]["endTime"],
-            timers:''
+			timers		: timeLag(data[0]["startTime"],data[0]["endTime"])
         }
         ViewVote(voteArray);
     });
@@ -625,19 +638,18 @@ function initiateTopic(){
         '</li>' +
         '<li class="form-inline">' +
             '<lable for="topicLottery">设置抽奖：</lable>' +
-            '<button class="btn btn-link">+新增抽奖活动</button>' +
-            '<button class="btn pull-right" onclick="topicPreview()">预览</button>' +
+            '<button class="btn btn-link disabled" disabled>+新增抽奖活动</button>' +
+            '<button class="btn pull-right" onclick="topicPreview()" id="topicPreview">预览</button>' +
         '</li>' +
         '</ul>';
     $('.FillInForm').html(newTopicForm);
     }
 }
 /*预览话题*/
-
 function topicPreview(){
     var topicTitle      =   checking($('#topicTitle').val());     //话题主题
     var topicContent    =   checking($('#topicContent').val());  //话题内容
-    var topicTimers     =   checking($('#topicTimers').val());  //话题时效
+    var topicTimers     =   $('#topicTimers').val();  //话题时效
     if(topicTitle ==="" || topicTitle == undefined){
         $('.topicTitle_error').css('display','inline').fadeOut(7500);
     }else if(topicContent === "" || topicContent == undefined){
@@ -647,6 +659,7 @@ function topicPreview(){
             topicTitle      :   topicTitle,
             topicContent    :   topicContent,
             timers           :   topicTimers,
+			actualEndTime:null,
             totalCount      :   0,
             joinInCount     :   0
         }
@@ -658,6 +671,7 @@ function topicPreview(){
 }
 function topicPost(topicArray){
     var topic = $('#topic').text();
+	$('.ToComplete').html('<h3 class="text-info">正在发送话题请等待......</h3>');
     $.ajax({
         type:'POST',
         data:{content:topic,timers:topicArray.timers},
@@ -666,7 +680,9 @@ function topicPost(topicArray){
     }).done(function(data){
             $('.ToComplete').html('<h3 class='+data.class+'>'+data.ME+'</h3><button class="btn btn-primary pull-right" id="ViewTpoic" onclick="ViewTopic(topicArray);">查看活动</button>');
             $id('topicPostBtn').disabled = true;
-            $('#topicPostBtn').addClass('disabled');
+            $('#topicPostBtn').addClass('disabled'); 
+			$id('topicPreview').disabled = true;
+            $('#topicPreview').addClass('disabled');
             bizids = data.bizid;
             if(bizids !=""){
                 var st = getTime(0);
@@ -678,11 +694,9 @@ function topicPost(topicArray){
                     dataType:'json'
                 }).done(function(data){
                     data.fieldCount == 0?(
-                        topicFeedback(bizids),
                         TopicCountDown(topicArray.timers),
-                        interactTopic(),
-                        topicHistory(), //得到历史的话题内容
-                        $('#TopicHistory li:first-child').css("background-color","rgba(11, 223, 28, 0.41)")
+                        interactTopic(), //显示到互动话题框
+                        topicHistory()//得到历史的话题内容
                         ):($('.ToComplete').append('<h6>话题内容保存失败</h6>'));
                 });
             }else{
@@ -690,27 +704,43 @@ function topicPost(topicArray){
                 $('#ViewTpoic').addClass('disabled');
                 $id('topicPostBtn').disabled = false;
                 $('#topicPostBtn').removeClass('disabled');
+				$id('topicPreview').disabled = false;
+                $('#topicPostBtn').removeClass('disabled');
             }
     });
 }
 /*查看话题结果*/
 function ViewTopic(topicArray){
-    var topicSituationHtml='';
-    if(topicArray.timers !="" ||topicArray.actualEndTime==""){
+    var topicSituationHtml='',topicFeedbackHtml='';
+   if(topicArray.timers !="" && topicArray.actualEndTime ==null ){
         topicSituationHtml  =
             '<div class="voteSituation">' +
                 '<h4>本次话题成功推送至<strong id="topicNum" class="text-error">'+topicArray.totalCount+'</strong>台语镜</h4><hr />' +
                 '<h3>距离结束还有<em id="topicClock" class="label label-info">0时0分0秒</em></h3>' +
                 '<button class="btn btn-danger" id="stopTopic" onclick="earlyTerminationTopic();">提前结束</button>' +
-                '<button class="btn btn-success">系统抽奖</button>'+
+                '<button class="btn btn-success disabled" disabled>系统抽奖</button>'+
             '</div>';
-    }else{
+		topicFeedbackHtml   =
+        '<div class="voteFeedback">' +
+            '<h3>参与人数<em id="topicJoinNum">'+topicArray.totalCount+'</em> 人</h3>' +
+            '<h3>发言数量<em id="speakTopic">'+topicArray.joinInCount+'</em> 条</h3>' +
+            '<h3>获奖人数<em id="">0</em> 人</h3>'+
+            '<button class="btn btn-primary pull-right disabled" disabled>导出详情</button>' +
+            '</div>';	
+    }else if(topicArray.actualEndTime !=""){
         topicSituationHtml  =
             '<div class="voteSituation">' +
                 '<h4>本次话题成功推送至<strong id="topicAllNum" class="text-error">'+topicArray.totalCount+'</strong>台语镜</h4><hr />' +
                 '<h3>已结束</h3>' +
-                '<button class="btn btn-success">系统抽奖</button>'+
+                '<button class="btn btn-success disabled" disabled>系统抽奖</button>'+
             '</div>';
+		topicFeedbackHtml   =
+        '<div class="voteFeedback">' +
+            '<h3>参与人数<em>'+topicArray.totalCount+'</em> 人</h3>' +
+            '<h3>发言数量<em>'+topicArray.joinInCount+'</em> 条</h3>' +
+            '<h3>获奖人数<em>0</em> 人</h3>'+
+            '<button class="btn btn-primary pull-right disabled" disabled>导出详情</button>' +
+            '</div>';		
     }
     var topicPreviewHtml    =
         '<div class="votePreview">' +
@@ -718,33 +748,22 @@ function ViewTopic(topicArray){
             '<h4>'+topicArray.topicContent+'</h4>' +
             '<button class="btn pull-right" onclick="originalTopicForm(topicArray);">原始表单</button>' +
             '</div>';
-    var topicFeedbackHtml   =
-        '<div class="voteFeedback">' +
-            '<h3>参与人数<em id="topicJoinNum">'+topicArray.totalCount+'</em> 人</h3>' +
-            '<h3>发言数量<em id="speakTopic">'+topicArray.joinInCount+'</em> 条</h3>' +
-            '<h3>获奖人数<em id="">0</em> 人</h3>'+
-            '<button class="btn btn-primary pull-right">导出详情</button>' +
-            '</div>'
     $('.FillInForm').html(topicPreviewHtml);
     $('.EffectPreview').html(topicSituationHtml);
     $('.ToComplete').html(topicFeedbackHtml);
 }
 /*得到话题的反馈结果*/
-function topicFeedback(bizids){
+function topicFeedback(){
+	var topicID = getCookie('topicID');
     $.ajax({
         type:'POST',
         url:'/topicFeedback',
-        data:{bizid:'bizids'},
+        data:{topicID:topicID},
         dataType:'json'
     }).done(function(data){
-        if(data.ERRORCODE == 0 ){
-            var allNum = data.RESULT[0]["total"];
-            $('#topicAllNum').text(allNum);
-            $('#topicJoinNum').text(allNum);
-        }
+		$('#speakTopic').text(data[0]["count(*)"]);
     });
 }
-//setTopicFeedback = setInterval(topicFeedback,10000);
 /*显示原始话题结构*/
 function originalTopicForm(topicArray){
     var actualEndTime =  topicArray.actualEndTime == undefined?('无法统计'):(topicArray.actualEndTime);
@@ -828,13 +847,12 @@ function showTopicHistory(data){
                 actualEndTime   :   data[0]["actualEndTime"],
                 startTime       :   data[0]["startTime"],
                 endTime         :   data[0]["endTime"],
-                timers:''
+				timers		: timeLag(data[0]["startTime"],data[0]["endTime"])
             }
             ViewTopic(topicArray);
         });
 }
 /*话题互动倒计时*/
-
 function TopicCountDown(timers){
     switch (timers){
         case '10':
@@ -868,17 +886,19 @@ function earlyTerminationTopic(){
         dataType:'json'
     }).done(function(data){
         data.fieldCount == 0?(
+			topicFeedbackData(),//保存用户反馈情况
             $id('stopTopic').disabled= true,
             $('#stopTopic').addClass('disabled'),
-            topicClock=0,
+			topicClock = 0,
             setCookie('topicClock',topicClock),
+            setCookie('topicID',""),
             clearTimeout(topicAccount),
             clearInterval(setReplyTopic),
-            clearInterval(setTopicFeedback),
             $('.IATitle h4').remove(),
+            $('.selectedIA h4').remove(),
+            $('#replyTopic').remove(),
             $('.alert span').text("话题结束啦，赶快去看看吧！"),
-            $('.alert').removeClass("alert-error").addClass("alert-success").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000),
-            $('#TopicHistory li:first-child').css("background-color","white")
+            $('.alert').removeClass("alert-error").addClass("alert-success").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
         ):(
             $('.alert span').text("话题结束失败！"),
             $('.alert').addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
@@ -924,6 +944,20 @@ function topicRemainTime(){
         sTime="倒计时结束！";
     }
     $('#topicClock').text(sTime);
+}
+/*保存用户反馈数据*/
+function topicFeedbackData(){
+	var totalCount = $('#topicJoinNum').text();
+	var joinInCount = $('#speakTopic').text();
+	var topicID = getCookie('topicID');
+	$.ajax({
+		type:'POST',
+		data:{totalCount:totalCount,joinInCount:joinInCount,topicID:topicID},
+		url:'/topicFeedbackData',
+		dataType:'json'
+	}).done(function (data){
+		console.log(data);
+	});
 }
 /*得到互动路况*/
 function Trafficweibo(){
@@ -998,7 +1032,7 @@ function selectedTraffic(){
         }
     });
 }
-    /*刷新路况*/
+/*刷新路况*/
 var leftStatus = 0;
 function refreshTraffic(){
     $('#div1').mouseenter(function (){
@@ -1122,9 +1156,10 @@ function RemoveTraffic(id){
 }
 /*移除全部已选播路况*/
 function removeTrafficAll(){
-    $.ajax({
-       type:'POST',
-       data:{table:1},
+	if($("#div0 h5").length >0){
+		$.ajax({
+		type:'POST',
+		data:{table:1},
        url:'/CloseAll',
        dataType:'json'
     }).done(function (data){
@@ -1137,6 +1172,10 @@ function removeTrafficAll(){
             $('.alert').addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
         );
     });
+	}else{
+			$('.alert span').text("没有什么好关闭的");
+            $('.alert').addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000);
+	}
 }
 /*根据输入内容使路况信息里的关键字高亮*/
 (function searchKeywords(){
@@ -1161,10 +1200,12 @@ function interactTopic(){
             }
             prompt(promptContent);
         }else{
-            topicID = data[0]["topicID"];
-            replyTopic(topicID); //载入留言
-            selectedReplyTopic(topicID);   //载入已选播的留言
-            topicArray = {
+            setCookie('topicID',data[0]["topicID"]);
+			topicFeedback();//留言人数
+			replyTopic();
+			setReplyTopic= setInterval(refreshReplyTopic,10000);//载入留言
+			selectedReplyTopic();   //载入已选播的留言
+            newTopicArray = {
                 topicTitle      :   data[0]["subject"],
                 topicContent    :   data[0]["text"],
                 totalCount      :   data[0]["totalCount"],
@@ -1172,15 +1213,16 @@ function interactTopic(){
                 actualEndTime   :   data[0]["actualEndTime"],
                 startTime       :   data[0]["startTime"],
                 endTime         :   data[0]["endTime"],
-                timers:''
+                timers		: timeLag(data[0]["startTime"],data[0]["endTime"])
             }
-            var html = '<h4 class="muted"><a href="javascript:;" onclick="ViewTopic(topicArray);">'+data[0]["subject"]+'</a></h4>';
+            var html = '<h4 class="muted"><a href="javascript:;" onclick="ViewTopic(newTopicArray);">'+data[0]["subject"]+'</a></h4>';
             $('.IATitle').html(html);
         }
     });
 }
 /*互动话题留言*/
-function replyTopic(topicID){
+function replyTopic(){
+	var topicID = getCookie('topicID');
     $.ajax({
         type:'POST',
         url:'/showReplyTopic',
@@ -1196,12 +1238,13 @@ function replyTopic(topicID){
             prompt(promptContent);
         }else{
             showReplyTopic(data);
-            setReplyTopic= setInterval(refreshReplyTopic,10000);
+			refreshReplyTopic();
             $('#speakTopic').text(data.length);
         }
     });
 }
 function showReplyTopic(data){
+console.log(data);
     var replyTopicHtml = '<ul class="nav nav-list" id="replyTopic">';
     for(var i= data.length-1;i>=0;i--){
         if(data[i]["supportOnline"] ==1){
@@ -1232,7 +1275,9 @@ function showReplyTopic(data){
 }
 /*刷新留言*/
 var rightStatus = 0;
-function refreshReplyTopic(topicID){
+function refreshReplyTopic(){
+	topicFeedback();//留言人数
+	var topicID = getCookie('topicID');
     $('.showIA').mouseenter(function (){
         rightStatus = 1;
     }).mouseleave(function(){
@@ -1254,7 +1299,7 @@ function refreshReplyTopic(topicID){
         });
         rightStatus == 0?($(".showIA").scrollTop(document.getElementById("replyTopic").scrollHeight)):('');
     }else{
-        replyTopic(topicID);
+        replyTopic();
     }
 }
 function newReplyTopic(data){
@@ -1262,7 +1307,7 @@ function newReplyTopic(data){
     for(var i=0;i<data.length;i++){
         if(data[i]["supportOnline"] ==1){
             newReplyTopicHtml +=
-                '<li class="label" id=traffic'+data[i]["id"]+' name='+data[i]["id"]+'>' +
+                '<li class="label" id=replyTopic'+data[i]["id"]+' name='+data[i]["id"]+'>' +
                     '<h5>' +
                     '<span>'+data[i]["text"]+'</span>' +
                     '<span>'+data[i]["time"]+'</span>' +
@@ -1272,7 +1317,7 @@ function newReplyTopic(data){
                     '</li>';
         }else{
             newReplyTopicHtml +=
-                '<li class="label" id=traffic'+data[i]["id"]+' name='+data[i]["id"]+'>' +
+                '<li class="label" id=replyTopic'+data[i]["id"]+' name='+data[i]["id"]+'>' +
                     '<h5>' +
                     '<span>'+data[i]["text"]+'</span>' +
                     '<span>'+data[i]["time"]+'</span>' +
@@ -1314,7 +1359,6 @@ function showanycastTopic(id){
                 html = '<h5 id=removeReplyTopic'+data[0]["id"]+'>' +
                     '<span>'+data[0]["text"]+'</span>' +
                     '<span>'+data[0]["time"]+'</span>' +
-                    '<a href="javascript:addTrafficOnMap('+data[0]["longitude"]+','+data[0]["latitude"]+');" class="btn btn-mini">定位</a>' +
                     '<a href="javascript:RemoveReplyTopic('+data[0]["id"]+');" class="btn btn-mini btn-primary">移除</a>' +
                     '<a href="javascript:;" title class="btn btn-mini btn-success" data-toggle="popover"  data-placement="right" data-content="昵称'+data[0]["nickname"]+',语镜号'+data[0]["mirrtalkNumber"]+'" data-original-title="联系方式">可联线</a>' +
                     '</h5>';
@@ -1322,7 +1366,6 @@ function showanycastTopic(id){
                 html = '<h5 id=removeReplyTopic'+data[0]["id"]+'>' +
                     '<span>'+data[0]["text"]+'</span>' +
                     '<span>'+data[0]["time"]+'</span>' +
-                    '<a href="javascript:addTrafficOnMap('+data[0]["longitude"]+','+data[0]["latitude"]+');" class="btn btn-mini">定位</a>' +
                     '<a href="javascript:RemoveReplyTopic('+data[0]["id"]+');" class="btn btn-mini btn-primary">移除</a>' +
                     '</h5>';
             }
@@ -1331,7 +1374,8 @@ function showanycastTopic(id){
     });
 }
 /*已选播未关闭的留言*/
-function selectedReplyTopic(topicID){
+function selectedReplyTopic(){
+	var topicID = getCookie('topicID');
     $.ajax({
         type:'POST',
         data:{topicID:topicID},
@@ -1343,7 +1387,6 @@ function selectedReplyTopic(topicID){
                 html = '<h5 id=removeReplyTopic'+data[i]["id"]+'>' +
                     '<span>'+data[i]["text"]+'</span>' +
                     '<span>'+data[i]["time"]+'</span>' +
-                    '<a href="javascript:addTrafficOnMap('+data[i]["longitude"]+','+data[i]["latitude"]+');" class="btn btn-mini">定位</a>' +
                     '<a href="javascript:RemoveReplyTopic('+data[i]["id"]+');" class="btn btn-mini btn-primary">移除</a>' +
                     '<a href="javascript:;" title class="btn btn-mini btn-success" data-toggle="popover"  data-placement="right" data-content="昵称'+data[i]["nickname"]+',语镜号'+data[i]["mirrtalkNumber"]+'" data-original-title="联系方式">可联线</a>' +
                     '</h5>';
@@ -1351,7 +1394,6 @@ function selectedReplyTopic(topicID){
                 html = '<h5 id=removeReplyTopic'+data[i]["id"]+'>' +
                     '<span>'+data[i]["text"]+'</span>' +
                     '<span>'+data[i]["time"]+'</span>' +
-                    '<a href="javascript:addTrafficOnMap('+data[i]["longitude"]+','+data[i]["latitude"]+');" class="btn btn-mini">定位</a>' +
                     '<a href="javascript:RemoveReplyTopic('+data[i]["id"]+');" class="btn btn-mini btn-primary">移除</a>' +
                     '</h5>';
             }
@@ -1380,7 +1422,8 @@ function RemoveReplyTopic(id){
 }
 /*移除全部已选播的留言*/
 function removeReplyTopicAll(){
-    $.ajax({
+	if($('.selectedIA h5').length > 0 ){
+		 $.ajax({
         type:'POST',
         data:{table:2},
         url:'/CloseAll',
@@ -1395,6 +1438,10 @@ function removeReplyTopicAll(){
             $('.alert').addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
         );
     });
+	}else{
+		$('.alert span').text("没有什么好关闭的"),
+        $('.alert').addClass("alert-error").css("display","block").animate({"top": "-5%"}, "slow").fadeOut(10000)
+	}
 }
 
 

@@ -10,7 +10,7 @@ var mysql = require('mysql');
 function mysqlOrm(conn) {
     this.conn = conn || {
         host:'192.168.1.186',
-	database:'dj',
+	    database:'dj',
         user:'dj',
         password:'djabc123'
     };
