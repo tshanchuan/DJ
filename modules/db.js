@@ -5,21 +5,21 @@
  * Time: 下午5:52
  */
 var mysql = require('mysql');
-
+var db = require('../config.js').config.queryBase;
 
 function mysqlOrm(conn) {
     this.conn = conn || {
-        host:'192.168.1.186',
-	    database:'dj',
-        user:'dj',
-        password:'djabc123'
+        host:db.host,
+        user:db.user,
+        password:db.password,
+        database:db.database
     };
     this.cache = {};
     this.connection = null;
 }
 function handleError (err) {
     if (err) {
-        // 如果是连接断开，自动重新连
+        // 如果是连接断开，自动重新连接
         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
             connect();
         } else {
@@ -46,7 +46,7 @@ mysqlOrm.prototype = {
     },
     handleError:function (err) {
     if (err) {
-        // 如果是连接断开，自动重新连
+        // 如果是连接断开，自动重新连接
         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
             this.connection.connect();
         } else {

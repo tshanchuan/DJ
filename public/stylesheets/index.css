@@ -1,43 +1,39 @@
 /*主页基本框架*/
 body{
-    margin-left: 112px;
-    width: 1780px;
+    margin-left: 0%;
+    margin-right: 0%;
+    min-width: 1366px !important;
+    min-height: 768px;
 }
 /*互动路况/地图/互动话题 */
 .IRC,.TM,.IA{
     height: 600px;
     border: 1px solid #e3e3e3;
-    background-color: rgba(252, 255, 250, 0.94);
+    background-color: rgb(252, 255, 250);
     position: relative;
 }
 /*标题栏*/
 .title{
-    padding: 3px;
-    background-color: rgba(12, 63, 111, 0.95);
+    padding: 5px;
+    background-color: rgb(12, 63, 111);
     text-align: center;
     color: rgb(224, 223, 223);
     font-size: 23px;
 }
 /*互动路况*/
 .selectedIRC{
-    border-bottom: 1px solid #e3e3e3;
     background-color: #ffffff;
-    position: absolute;
-    width: 410px;
     margin-top: 30px;
 }
 /*互动话题*/
 .selectedIA{
-    border: 1px solid #e3e3e3;
     background-color: #ffffff;
     position: absolute;
     width: 410px;
 }
 /*互动话题的话题标题显示栏*/
 .IATitle{
-    border-bottom: 1px solid #e3e3e3;
-    background-color: rgba(35, 247, 255, 0.13);
-    margin-top: 30px;
+    background-color: rgb(35, 247, 255);
 }
 /*互动话题的话题标题显示栏内部样式*/
 .IATitle h4{
@@ -56,8 +52,7 @@ body{
 /*刷新地图的表单*/
 .TM form{
     position: absolute;
-    right: -9.5%;
-    top:-5.2%;
+    right: 0%;
 }
 /*建立节目的节目栏*/
 .appArea{
@@ -69,7 +64,7 @@ body{
 .app{
     height: 320px;
     border: 1px solid #e3e3e3;
-    background-color: rgba(252, 255, 250, 0.94);
+    background-color: rgb(252, 255, 250);
 }
 /*发布一个话题或者投票的按钮*/
 #New [class="btn"] {
@@ -79,7 +74,7 @@ body{
 .FillInForm,.ToComplete{
     height: 290px;
     border: 1px solid #e3e3e3;
-    background-color: rgba(252, 255, 250, 0.94);
+    background-color: rgb(252, 255, 250);
     padding-left: 2px;
 }
 /*预览效果*/
@@ -87,27 +82,36 @@ body{
     padding: 0px 20px;
     height: 290px;
     border-bottom: 1px solid #e3e3e3;
-    background-color: rgba(252, 255, 250, 0.94);
+    background-color: rgb(252, 255, 250);
 }
 /**/
+.voteSituation,.topicSituation{
+    text-align: center;
+}
 .voteSituation > h4 >strong{
     font: 2.5em normal;
+    vertical-align: middle;
+}
+.topicSituation > h4 >strong{
+    font: 2.5em normal;
+    vertical-align: middle;
 }
 /*倒计时的时间*/
 #voteClock,#topicClock{
     font-size: 1em;
+    padding: 10px;
+    vertical-align: text-bottom;
 }
 #topic,#vote{
     height: 204px;
     overflow-x: auto;
 }
 .showIRC{
-    height:565px;
+    height:95%;
     overflow:auto;
-    margin-top: 30px;
 }
 .showIA{
-    height:525px;
+    height:95%;
     overflow:auto;
 }
 .showIRC h5 {
@@ -116,18 +120,20 @@ body{
 .showIA h5 {
     white-space: normal;
 }
+#home,#profile{
+    height: 510px;
+    overflow: auto;
+}
+#home h5 {
+    white-space: normal;
+}
 h5 span {
     margin-right:3px ;
 }
 h5 a{
     margin-left: 5px;
 }
-.voteSituation{
-    text-align: center;
-}
-.voteSituation button{
-    margin: 10px;
-}
+
 #VoteHistory,#TopicHistory{
     height: 190px;
 }
@@ -135,24 +141,40 @@ h5 a{
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: rgba(76, 77, 85, 0.80);
+    color: rgb(76, 77, 85);
 }
 #TopicHistory li a{
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: rgba(76, 77, 85, 0.80);
+    color: rgb(76, 77, 85);
 }
 #Page{
     cursor: pointer;
 }
+.ToComplete {
+    text-align: center;
+}
+.votePreview button{
+    position: relative;
+    left: 40%;
+}
+.topicPreview button{
+    position: relative;
+    left: 40%;
+}
+#votePostBtn,#topicPostBtn,#rtPreviewBtn,#rtPostBtn{
+    position: relative;
+    left: 40%;
+}
 .FillInForm ul li{
     margin-top: 2px;
+    text-align: left;
 }
 /*话题内容的textarea*/
 #topicContent{
     width: 340px;
-    height: 176px;
+    height: 150px;
 }
 /*关闭全部路况的按钮*/
 #removeTrafficAll{
@@ -171,11 +193,11 @@ h5 a{
     position: absolute;
     left: 0.3%;
 }
-.showIA li:nth-child(odd),#traffic li:nth-child(odd){
+.showIA li:nth-child(odd),#traffic li:nth-child(odd),#DJtraffic li:nth-child(odd){
     background-color: rgba(109, 175, 247, 0.49);
     color: #000000;
 }
-.showIA li:nth-child(even),#traffic li:nth-child(even){
+.showIA li:nth-child(even),#traffic li:nth-child(even),#DJtraffic li:nth-child(even){
     background-color: rgba(158, 221, 163, 0.49);
      color: #000000;
 }
@@ -195,6 +217,14 @@ h5 a{
     left: 35%;
 }
 .being {
-	background-color: #;
+    background-color: #40F713;
 }
-
+.Packup{
+    position: absolute;
+    position: absolute;
+    width: 10px;
+    white-space: normal;
+    cursor: pointer;
+    right: -30px;
+    bottom: 0px;
+}

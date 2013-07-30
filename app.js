@@ -10,8 +10,7 @@ var express = require('express'),   //导入Express模块
     path = require('path'),
     juicer = require('juicer'),
     fs = require('fs');
-    //io = require('socket.io');
-
+    config = require('./config').config;
 
 var app = express();
 
@@ -33,11 +32,14 @@ app.configure(function(){
     app.use(express.methodOverride());
     app.use(express.static(__dirname + '/public'));//静态文件支持加缓存
     app.use(express.cookieParser());       //开启cookie
-    app.use(app.router);
-   /* app.use(express.session({              //开启session
+    app.use(express.session({//开启session
         secret: config.session_secret
-    }));*/
+    }));
+    app.use(app.router);
+
 });
+
+routes(app);
 
 app.configure('development', function(){
     app.use(express.errorHandler());
@@ -47,8 +49,15 @@ app.configure('production', function () {
     app.set('view cache', true);
 });
 
-http.createServer(app).listen(app.get('port'), function(){
+var server = http.createServer(app).listen(app.get('port'), function(){
     console.log("Express server listening on port " + app.get('port'));
 });
-
-routes(app);
+var io  = require('socket.io').listen(server);
+global.socketDJ = {};
+io.sockets.on('connection', function (socket) {
+    global.socketDJ['key'] = socket;
+    socket.emit('DJ', { result: '0' });
+    socket.on('my other event', function (data) {
+        console.log(data);
+    });
+});

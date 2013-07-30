@@ -5,17 +5,15 @@
  * Time: 上午10:07
  * To change this template use File | Settings | File Templates.
  */
-var mapObj,toolbar,overview,scale;
+var mapObj,toolbar,overview,scale,Trafficlay,map;
 
-function mapInit()
-
-{
+function mapInit(x,y){
 
     var opt = {
 
         level:13,//初始地图视野级别
 
-        //center:new MMap.LngLat(121.47190996,31.23221255),//设置地图中心点
+        center:new MMap.LngLat(x,y),//设置地图中心点
 
         doubleClickZoom:true,//双击放大地图
 
@@ -29,11 +27,11 @@ function mapInit()
 
     {
 
-        toolbar = new MMap.ToolBar();
-
-        toolbar.autoPosition=false; //加载工具条
+        toolbar = new MMap.ToolBar({autoPosition:false});
 
         mapObj.addControl(toolbar);
+
+        toolbar.getLocation();//获得定位信息
 
         overview = new MMap.OverView(); //加载鹰眼
 
@@ -45,13 +43,11 @@ function mapInit()
 
         mapObj.bind(mapObj,"mousewheel",addTileLayer_TRAFFIC);
 
-    });
 
-    mapObj.setCity("上海市");
+    });
 
 }
 
-var Trafficlay,subwaylay,customlay;
 /*添加实时交通层*/
 function addTileLayer_TRAFFIC(){
 
@@ -81,7 +77,7 @@ function removeTileLayer_TRAFFIC(){
 
 }
 /*添加路况坐标点*/
-function addTrafficOnMap(lat,lot){
+function addTrafficOnMap(lot,lat){
 
     var icoArray =["green","blue","red","orange"];
 
@@ -91,7 +87,7 @@ function addTrafficOnMap(lat,lot){
 
         id:"t", //marker id
 
-        position:new MMap.LngLat(lat,lot), //位置
+        position:new MMap.LngLat(lot,lat), //位置
 
         icon:"images/"+icon+"5.png",//复杂图标
 
@@ -107,6 +103,32 @@ function addTrafficOnMap(lat,lot){
 
     mapObj.addOverlays(marker);
 
-    mapObj.setFitView();//设置地图合适视野级别
+    mapObj.setZoomAndCenter(15,new MMap.LngLat(lot,lat));//同时设置地图的中心点及zoom级别
 
+}
+/*交叉路口查询*/
+function roadSearch(road1,road2,city){
+
+    var RoadSearchOption = {
+
+        number:1,//每页数量,默认10
+
+        batch:1,//请求页数，默认1
+
+        ext:""//扩展字段
+
+    };
+
+    var road = new MMap.RoadSearch(RoadSearchOption);
+
+    road.roadCrossSearchByRoadNames(road1,road2,city,function(data){
+
+       data.list == undefined?(
+           $('.radio_error').css('display','inline').text("无法定位！").fadeOut(7500)
+       ):(
+        addTrafficOnMap(data.list[0]["x"],data.list[0]["y"]),
+        setCookie('lng',data.list[0]["x"]),
+        setCookie('lat',data.list[0]["y"])
+       );
+    });
 }
